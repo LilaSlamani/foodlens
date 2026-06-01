@@ -1,0 +1,277 @@
+{% extends "base.html" %}
+{% block title %}{{ p.product_name or "Produit" }} — FoodLens{% endblock %}
+
+{% block content %}
+{% set grade = (p.nutriscore_grade or "?")|lower %}
+{% set gc = p._grade_color %}
+{% set eco = (p.ecoscore_grade or "")|lower %}
+{% set ec = p._eco_color %}
+
+<!-- ── BREADCRUMB ──────────────────────────────────────────────── -->
+<div class="max-w-7xl mx-auto px-4 pt-6 pb-2">
+  <nav class="flex items-center gap-2 text-xs text-gray-400">
+    <a href="/" class="hover:text-navy transition-colors">Accueil</a>
+    <span>/</span>
+    <a href="/recherche" class="hover:text-navy transition-colors">Recherche</a>
+    <span>/</span>
+    <span class="text-navy font-medium truncate max-w-xs">{{ (p.product_name or "Produit")[:40] }}</span>
+  </nav>
+</div>
+
+<!-- ── HERO PRODUIT ───────────────────────────────────────────── -->
+<div class="max-w-7xl mx-auto px-4 py-8">
+  <div class="grid grid-cols-1 lg:grid-cols-5 gap-10 items-start">
+
+    <!-- Image -->
+    <div class="lg:col-span-2" data-aos="fade-right">
+      <div class="aspect-square rounded-3xl overflow-hidden bg-cream flex items-center justify-center shadow-card">
+        {% if p.get("image_url") %}
+          <img src="{{ p.image_url }}" alt="{{ p.product_name }}"
+               class="w-full h-full object-contain p-6"
+               onerror="this.parentNode.innerHTML='<div class=\'text-9xl text-gray-200\'>🥫</div>'">
+        {% else %}
+          <div class="text-9xl text-gray-200">🥫</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Info -->
+    <div class="lg:col-span-3" data-aos="fade-left">
+      <!-- Labels & badges -->
+      <div class="flex flex-wrap gap-2 mb-4">
+        {% if p.pnns_groups_2 %}
+        <span class="tag">{{ p.pnns_groups_2 }}</span>
+        {% endif %}
+        {% if p.get("grade_predicted") %}
+        <span class="tag tag-blue">✨ Prédit par IA</span>
+        {% endif %}
+        {% for emoji, name in p._labels %}
+        <span class="tag">{{ emoji }} {{ name }}</span>
+        {% endfor %}
+      </div>
+
+      <h1 class="text-3xl md:text-4xl font-black text-navy tracking-tight leading-tight mb-2">
+        {{ p.product_name or "Produit inconnu" }}
+      </h1>
+      {% if p.brands %}
+      <p class="text-gray-400 text-base mb-6">{{ p.brands }}</p>
+      {% endif %}
+
+      <!-- Nutri-Score scale visuelle -->
+      <div class="mb-6">
+        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Nutri-Score</p>
+        <div class="flex gap-1.5">
+          {% for letter, bg, text_c in [("A","#1a9641","#fff"),("B","#a6d96a","#1A1F36"),("C","#ffffbf","#1A1F36"),("D","#fdae61","#1A1F36"),("E","#d7191c","#fff")] %}
+          <div class="nutriscore-step {% if letter == grade|upper %}nutriscore-active{% endif %}"
+               style="background:{{ bg }};color:{{ text_c }}">{{ letter }}</div>
+          {% endfor %}
+        </div>
+        {% if p.nutriscore_score is not none %}
+        <p class="text-xs text-gray-400 mt-1.5">Score numérique : {{ p.nutriscore_score }}</p>
+        {% endif %}
+      </div>
+
+      <!-- KPIs row -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+        <div class="kpi-card">
+          <div class="kpi-icon" style="background:{{ gc.bg }};color:{{ gc.text }}">{{ grade|upper }}</div>
+          <div class="kpi-label">Nutri-Score</div>
+        </div>
+        <div class="kpi-card">
+          {% if p.nova_group %}
+          <div class="kpi-val {% if p.nova_group|int <= 2 %}text-green-600{% elif p.nova_group|int == 3 %}text-amber-500{% else %}text-red-600{% endif %}">{{ p.nova_group|int }}</div>
+          {% else %}
+          <div class="kpi-val text-gray-300">—</div>
+          {% endif %}
+          <div class="kpi-label">NOVA</div>
+        </div>
+        <div class="kpi-card">
+          {% if p.additives_n is not none %}
+          <div class="kpi-val {% if p.additives_n|int == 0 %}text-green-600{% elif p.additives_n|int <= 3 %}text-amber-500{% else %}text-red-600{% endif %}">{{ p.additives_n|int }}</div>
+          {% else %}
+          <div class="kpi-val text-gray-300">—</div>
+          {% endif %}
+          <div class="kpi-label">Additifs</div>
+        </div>
+        <div class="kpi-card">
+          {% if p.get("energy-kcal_100g") %}
+          <div class="kpi-val text-navy">{{ p["energy-kcal_100g"]|int }}</div>
+          <div class="kpi-label">kcal / 100g</div>
+          {% else %}
+          <div class="kpi-val text-gray-300">—</div>
+          <div class="kpi-label">Énergie</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Eco-Score + Analyse ingrédients -->
+      <div class="flex flex-wrap gap-3 mb-6">
+        {% if eco and eco in ["a","b","c","d","e"] %}
+        <div class="flex items-center gap-2 bg-gray-50 rounded-xl px-4 py-2.5 border border-gray-100">
+          <div class="w-8 h-8 rounded-lg font-black text-sm flex items-center justify-content-center" style="background:{{ ec.bg }};color:{{ ec.text }}">
+            <span class="block w-full text-center">{{ eco|upper }}</span>
+          </div>
+          <div>
+            <div class="text-xs font-bold text-navy">Eco-Score</div>
+            <div class="text-xs text-gray-400">Impact environnemental</div>
+          </div>
+        </div>
+        {% endif %}
+
+        {% for emoji, label, bg, fg in p._analysis_chips %}
+        <div class="analysis-chip" style="background:{{ bg }};color:{{ fg }}">
+          {{ emoji }} {{ label }}
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- Action buttons -->
+      <div class="flex flex-wrap gap-3">
+        <a href="/substitution/{{ p.code }}" class="btn-primary">🔄 Trouver un substitut</a>
+        {% if user %}
+        <form action="/favoris/{{ p.code }}" method="POST">
+          <button class="btn-secondary">❤️ Ajouter aux favoris</button>
+        </form>
+        {% else %}
+        <a href="/connexion" class="btn-secondary">🔐 Se connecter pour sauvegarder</a>
+        {% endif %}
+        <a href="/recherche" class="btn-ghost">← Retour</a>
+      </div>
+
+      {% if request.query_params.get("saved") %}
+      <div class="mt-4 bg-green-50 border border-green-200 text-green-700 text-sm rounded-xl px-4 py-3">
+        ✅ Produit ajouté à vos favoris !
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- ── NUTRITION + DETAILS ────────────────────────────────────── -->
+<div class="max-w-7xl mx-auto px-4 pb-16">
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+    <!-- Valeurs nutritionnelles -->
+    <div class="card" data-aos="fade-up">
+      <h2 class="font-display font-bold text-xl text-navy mb-1">Valeurs nutritionnelles</h2>
+      <p class="text-xs text-gray-400 mb-5">Pour 100g
+        {% if p.serving_size %} · Portion : {{ p.serving_size }}{% endif %}
+      </p>
+      {% if nutrition %}
+        {% for row in nutrition %}
+        <div class="mb-4">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-sm font-medium text-gray-600">{{ row.label }}</span>
+            <div class="flex items-center gap-2">
+              {% if row.level == "high" %}
+              <span class="level-badge bg-red-50 text-red-600">ÉLEVÉ</span>
+              {% elif row.level == "low" %}
+              <span class="level-badge bg-green-50 text-green-600">FAIBLE</span>
+              {% elif row.level == "moderate" %}
+              <span class="level-badge bg-amber-50 text-amber-600">MODÉRÉ</span>
+              {% endif %}
+              <span class="text-sm font-bold text-navy">{{ row.val }}g</span>
+            </div>
+          </div>
+          <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+            <div class="h-full rounded-full transition-all duration-700 ease-out"
+                 style="width:{{ row.pct }}%;background:{{ row.color }}"
+                 data-width="{{ row.pct }}"></div>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <p class="text-sm text-gray-300 py-4">Valeurs nutritionnelles non disponibles.</p>
+      {% endif %}
+    </div>
+
+    <!-- Infos complémentaires -->
+    <div class="space-y-4">
+
+      <!-- Ingrédients -->
+      {% if p.ingredients %}
+      <div class="card" data-aos="fade-up" data-aos-delay="60">
+        <button class="w-full flex items-center justify-between" onclick="toggleSection('ingredients')">
+          <h3 class="font-display font-semibold text-navy">📋 Ingrédients</h3>
+          <svg id="ingredients-icon" class="w-5 h-5 text-gray-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+          </svg>
+        </button>
+        <div id="ingredients" class="hidden mt-4">
+          <p class="text-sm text-gray-500 leading-relaxed">{{ p.ingredients }}</p>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Additifs -->
+      {% if p._additives_fmt %}
+      <div class="card" data-aos="fade-up" data-aos-delay="80">
+        <button class="w-full flex items-center justify-between" onclick="toggleSection('additifs')">
+          <h3 class="font-display font-semibold text-navy">
+            🧪 Additifs
+            <span class="ml-2 text-xs font-normal bg-gray-100 text-gray-500 rounded-full px-2 py-0.5">{{ p._additives_fmt|length }}</span>
+          </h3>
+          <svg id="additifs-icon" class="w-5 h-5 text-gray-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+          </svg>
+        </button>
+        <div id="additifs" class="hidden mt-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-1">
+            {% for add in p._additives_fmt %}
+            <div class="text-xs text-gray-600 py-1.5 border-b border-gray-50 last:border-0">{{ add }}</div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Emballage -->
+      {% if p.packaging %}
+      <div class="card" data-aos="fade-up" data-aos-delay="100">
+        <h3 class="font-display font-semibold text-navy mb-2">♻️ Emballage</h3>
+        <p class="text-sm text-gray-500">{{ p.packaging }}</p>
+      </div>
+      {% endif %}
+
+      <!-- Allergènes -->
+      {% if p._allergens_list %}
+      <div class="card border-red-100 bg-red-50" data-aos="fade-up" data-aos-delay="120">
+        <h3 class="font-display font-semibold text-red-600 mb-3">⚠️ Allergènes</h3>
+        <div class="flex flex-wrap gap-2">
+          {% for a in p._allergens_list %}
+          <span class="inline-flex items-center gap-1.5 bg-red-100 text-red-700 text-xs font-semibold px-3 py-1.5 rounded-full border border-red-200">⚠️ {{ a }}</span>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Origine -->
+      {% if p.origins %}
+      <div class="card" data-aos="fade-up" data-aos-delay="140">
+        <h3 class="font-display font-semibold text-navy mb-2">🌍 Origine</h3>
+        <p class="text-sm text-gray-500">{{ p.origins }}</p>
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleSection(id) {
+  const el   = document.getElementById(id);
+  const icon = document.getElementById(id + '-icon');
+  el.classList.toggle('hidden');
+  icon.style.transform = el.classList.contains('hidden') ? '' : 'rotate(180deg)';
+}
+// Animate progress bars on load
+window.addEventListener('load', () => {
+  document.querySelectorAll('[data-width]').forEach(el => {
+    el.style.width = el.getAttribute('data-width') + '%';
+  });
+});
+</script>
+{% endblock %}

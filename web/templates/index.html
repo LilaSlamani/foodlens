@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% block title %}FoodLens — Analyse nutritionnelle{% endblock %}
+
+{% block content %}
+
+<!-- ── HERO ─────────────────────────────────────────────────────── -->
+<section class="relative overflow-hidden bg-navy py-24 md:py-36">
+  <!-- Dot grid -->
+  <div class="absolute inset-0 dot-grid pointer-events-none"></div>
+  <!-- Blobs -->
+  <div class="blob absolute -top-24 -right-24 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl"></div>
+  <div class="blob absolute -bottom-24 -left-24 w-72 h-72 bg-indigo-500/15 rounded-full blur-3xl" style="animation-delay:2s"></div>
+  <!-- Floating emojis -->
+  <span class="float-emoji top-[18%] left-[6%] text-4xl" style="animation-delay:0s">🥑</span>
+  <span class="float-emoji top-[22%] right-[9%] text-3xl" style="animation-delay:1.5s">🍎</span>
+  <span class="float-emoji bottom-[18%] left-[10%] text-2xl" style="animation-delay:3s">🥦</span>
+  <span class="float-emoji bottom-[15%] right-[7%] text-3xl" style="animation-delay:0.8s">🍊</span>
+  <span class="float-emoji top-[50%] left-[3%] text-2xl" style="animation-delay:2s">🫐</span>
+  <span class="float-emoji top-[35%] right-[4%] text-2xl" style="animation-delay:4s">🥕</span>
+
+  <div class="relative max-w-4xl mx-auto px-4 text-center">
+    <div class="hero-badge animate-fade-in">
+      <span class="hero-dot"></span>
+      Powered by Open Food Facts
+    </div>
+
+    <h1 class="text-6xl md:text-8xl font-black text-white tracking-tighter leading-none mb-6 animate-fade-up" style="animation-delay:.1s">
+      Food<span class="text-white/30">Lens</span>
+    </h1>
+    <p class="text-white/55 text-lg md:text-xl mb-12 max-w-lg mx-auto leading-relaxed animate-fade-up" style="animation-delay:.2s">
+      Analysez vos produits alimentaires, décodez leur composition et trouvez des alternatives plus saines.
+    </p>
+
+    <!-- Search form -->
+    <form action="/recherche" method="GET" class="max-w-2xl mx-auto animate-fade-up" style="animation-delay:.3s">
+      <div class="flex gap-2 p-2 bg-white/10 backdrop-blur border border-white/20 rounded-2xl">
+        <input type="text" name="q" placeholder="Nutella, yaourt nature, pain complet…"
+               class="flex-1 bg-transparent text-white placeholder-white/40 text-sm px-4 py-3 focus:outline-none">
+        <button type="submit"
+                class="bg-white text-navy font-bold rounded-xl px-7 py-3 text-sm hover:bg-gray-50 active:scale-95 transition-all shadow-sm shrink-0">
+          Rechercher →
+        </button>
+      </div>
+    </form>
+  </div>
+</section>
+
+<!-- ── CATEGORIES ─────────────────────────────────────────────── -->
+<section class="max-w-7xl mx-auto px-4 py-14">
+  <h2 class="font-display font-bold text-2xl text-navy mb-6" data-aos="fade-up">Parcourir par catégorie</h2>
+  <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+    {% set cats = [
+      ("🥛","Produits laitiers","yaourt"),("🍞","Boulangerie","pain"),
+      ("🥩","Viandes","poulet"),("🥦","Légumes","légumes"),
+      ("🍎","Fruits","pomme"),("🧃","Boissons","jus"),
+      ("🍪","Biscuits","biscuit"),("🧀","Fromages","fromage"),
+      ("🍫","Chocolat","chocolat"),("🥚","Œufs","oeuf"),
+      ("🍝","Pâtes & riz","pâtes"),("🥫","Conserves","conserve"),
+    ] %}
+    {% for emoji, label, term in cats %}
+    <a href="/recherche?q={{ term }}"
+       class="cat-card group"
+       data-aos="fade-up" data-aos-delay="{{ loop.index0 * 40 }}">
+      <span class="cat-emoji group-hover:scale-110 transition-transform duration-300">{{ emoji }}</span>
+      <span class="cat-label">{{ label }}</span>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+
+<!-- ── STATS ──────────────────────────────────────────────────── -->
+<section class="bg-cream py-12">
+  <div class="max-w-7xl mx-auto px-4">
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+      <div class="stat-card" data-aos="fade-up" data-aos-delay="0">
+        <div class="stat-val">{{ total }}</div>
+        <div class="stat-label">Produits analysés</div>
+      </div>
+      <div class="stat-card" data-aos="fade-up" data-aos-delay="80">
+        <div class="stat-val">825 k+</div>
+        <div class="stat-label">Références mondiales</div>
+      </div>
+      <div class="stat-card" data-aos="fade-up" data-aos-delay="160">
+        <div class="stat-val">100%</div>
+        <div class="stat-label">Données Open Source</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── PRODUITS POPULAIRES ────────────────────────────────────── -->
+{% if populaires %}
+<section class="max-w-7xl mx-auto px-4 py-14">
+  <div class="flex items-center justify-between mb-6">
+    <h2 class="font-display font-bold text-2xl text-navy" data-aos="fade-up">✨ Produits bien notés</h2>
+    <a href="/recherche?grade=a&grade=b" class="text-sm text-gray-400 hover:text-navy transition-colors" data-aos="fade-up">
+      Voir tout →
+    </a>
+  </div>
+  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+    {% for p in populaires %}
+    {% set grade = (p.nutriscore_grade or "?")|lower %}
+    {% set gc = grade_colors.get(grade, {"bg":"#E5E7EB","text":"#6B7280"}) %}
+    <a href="/produit/{{ p.code }}" class="product-card group" data-aos="fade-up" data-aos-delay="{{ loop.index0 * 60 }}">
+      <!-- Image -->
+      <div class="product-img-wrap">
+        {% if p.image_url %}
+          <img src="{{ p.image_url }}" alt="{{ p.product_name }}"
+               class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+        {% else %}
+          <div class="w-full h-full flex items-center justify-center text-5xl bg-gray-50">🥫</div>
+        {% endif %}
+      </div>
+      <!-- Info -->
+      <div class="p-4">
+        <div class="flex items-center gap-2 mb-2">
+          <div class="grade-badge" style="background:{{ gc.bg }};color:{{ gc.text }}">{{ grade|upper }}</div>
+          <h3 class="font-semibold text-navy text-sm leading-tight truncate">
+            {{ (p.product_name or "Produit")[:28] }}
+          </h3>
+        </div>
+        <p class="text-xs text-gray-400 truncate">
+          {{ p.brands or "" }}{% if p.get("energy-kcal_100g") %} · {{ p["energy-kcal_100g"]|int }} kcal{% endif %}
+        </p>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<!-- ── HOW IT WORKS ───────────────────────────────────────────── -->
+<section class="bg-cream py-16">
+  <div class="max-w-7xl mx-auto px-4">
+    <div class="text-center mb-10" data-aos="fade-up">
+      <h2 class="font-display font-bold text-2xl text-navy mb-2">Comment ça marche ?</h2>
+      <p class="text-gray-400 text-sm">Simple, rapide, accessible à tous</p>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+      {% for icon, step, title, desc, bg in [
+        ("🔎","Étape 1","Recherchez","Tapez le nom d'un produit ou scannez son code-barres.", "bg-emerald-50"),
+        ("📊","Étape 2","Analysez","Nutri-Score, NOVA, Eco-Score, additifs, valeurs nutritionnelles.", "bg-blue-50"),
+        ("🔄","Étape 3","Substituez","Découvrez des alternatives plus saines dans la même catégorie.", "bg-amber-50"),
+      ] %}
+      <div class="{{ bg }} rounded-2xl p-7 border border-white" data-aos="fade-up" data-aos-delay="{{ loop.index0 * 100 }}">
+        <div class="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-2xl shadow-sm mb-5">{{ icon }}</div>
+        <div class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">{{ step }}</div>
+        <h3 class="font-display font-bold text-navy text-lg mb-2">{{ title }}</h3>
+        <p class="text-sm text-gray-500 leading-relaxed">{{ desc }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA (visitors only) ───────────────────────────────────── -->
+{% if not user %}
+<section class="max-w-7xl mx-auto px-4 py-14" data-aos="fade-up">
+  <div class="relative overflow-hidden bg-navy rounded-3xl px-8 py-14 text-center">
+    <div class="absolute inset-0 dot-grid opacity-10 pointer-events-none"></div>
+    <div class="blob absolute -top-16 -right-16 w-64 h-64 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="relative">
+      <h2 class="font-display font-bold text-3xl text-white mb-3">Prêt à mieux manger ?</h2>
+      <p class="text-white/55 text-sm mb-8 max-w-sm mx-auto">
+        Créez un compte gratuit pour sauvegarder vos substitutions et configurer vos alertes allergènes.
+      </p>
+      <a href="/connexion#register" class="inline-flex items-center gap-2 bg-white text-navy font-bold rounded-xl px-8 py-3 text-sm hover:bg-gray-50 active:scale-95 transition-all shadow-sm">
+        Créer un compte gratuit
+      </a>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% endblock %}

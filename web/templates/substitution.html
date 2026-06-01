@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+{% block title %}Substituts — {{ original.product_name or "Produit" }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 pt-6 pb-2">
+  <nav class="flex items-center gap-2 text-xs text-gray-400">
+    <a href="/" class="hover:text-navy transition-colors">Accueil</a>
+    <span>/</span>
+    <a href="/produit/{{ original.code }}" class="hover:text-navy transition-colors truncate max-w-xs">
+      {{ (original.product_name or "Produit")[:30] }}
+    </a>
+    <span>/</span>
+    <span class="text-navy font-medium">Substituts</span>
+  </nav>
+</div>
+
+<div class="max-w-7xl mx-auto px-4 py-10">
+
+  <!-- Header -->
+  <div class="mb-10" data-aos="fade-up">
+    <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Substitution intelligente</p>
+    <h1 class="text-3xl md:text-4xl font-black text-navy tracking-tight mb-3">
+      Alternatives à <span class="text-navy/40">{{ (original.product_name or "ce produit")[:40] }}</span>
+    </h1>
+    <p class="text-gray-400 text-sm max-w-lg">
+      Produits de la même catégorie avec un meilleur Nutri-Score, sélectionnés dans notre base de données.
+    </p>
+  </div>
+
+  <!-- Original product mini-card -->
+  <div class="flex items-center gap-4 bg-gray-50 rounded-2xl px-5 py-4 mb-10 border border-gray-100" data-aos="fade-up">
+    {% if original.get("image_url") %}
+    <img src="{{ original.image_url }}" alt="{{ original.product_name }}"
+         class="w-14 h-14 object-contain rounded-xl bg-white border border-gray-100 p-1"
+         onerror="this.style.display='none'">
+    {% endif %}
+    <div class="flex-1 min-w-0">
+      <p class="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-0.5">Produit actuel</p>
+      <p class="font-bold text-navy truncate">{{ original.product_name or "Inconnu" }}</p>
+      <p class="text-xs text-gray-400">{{ original.brands or "" }}</p>
+    </div>
+    {% set orig_grade = (original.nutriscore_grade or "?")|lower %}
+    {% set orig_gc = {"a":{"bg":"#1a9641","text":"#fff"},"b":{"bg":"#a6d96a","text":"#1A1F36"},"c":{"bg":"#ffffbf","text":"#1A1F36"},"d":{"bg":"#fdae61","text":"#1A1F36"},"e":{"bg":"#d7191c","text":"#fff"}}.get(orig_grade, {"bg":"#E5E7EB","text":"#6B7280"}) %}
+    <div class="w-12 h-12 rounded-xl flex items-center justify-center font-black text-lg shrink-0"
+         style="background:{{ orig_gc.bg }};color:{{ orig_gc.text }}">
+      {{ orig_grade|upper }}
+    </div>
+  </div>
+
+  {% if substituts %}
+  <!-- Substitutes grid -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+    {% set medals = ["🥇","🥈","🥉"] %}
+    {% for s in substituts %}
+    {% set grade = (s.nutriscore_grade or "?")|lower %}
+    {% set gc = {"a":{"bg":"#1a9641","text":"#fff"},"b":{"bg":"#a6d96a","text":"#1A1F36"},"c":{"bg":"#ffffbf","text":"#1A1F36"},"d":{"bg":"#fdae61","text":"#1A1F36"},"e":{"bg":"#d7191c","text":"#fff"}}.get(grade, {"bg":"#E5E7EB","text":"#6B7280"}) %}
+    <a href="/produit/{{ s.code }}" class="sub-card group" data-aos="fade-up" data-aos-delay="{{ loop.index0 * 80 }}">
+      <!-- Image -->
+      <div class="aspect-video overflow-hidden bg-gray-50 relative">
+        {% if s.get("image_url") %}
+        <img src="{{ s.image_url }}" alt="{{ s.product_name }}"
+             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+             onerror="this.parentNode.innerHTML='<div class=\'w-full h-full flex items-center justify-center text-4xl\'>🥫</div>'">
+        {% else %}
+        <div class="w-full h-full flex items-center justify-center text-4xl">🥫</div>
+        {% endif %}
+        <!-- Medal -->
+        {% if loop.index0 < 3 %}
+        <div class="absolute top-3 left-3 text-2xl drop-shadow-md">{{ medals[loop.index0] }}</div>
+        {% endif %}
+        <!-- Grade badge -->
+        <div class="absolute top-3 right-3 w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm shadow-md"
+             style="background:{{ gc.bg }};color:{{ gc.text }}">
+          {{ grade|upper }}
+        </div>
+      </div>
+      <!-- Info -->
+      <div class="p-4 flex-1 flex flex-col">
+        <h3 class="font-bold text-navy text-sm leading-snug mb-1">
+          {{ (s.product_name or "Produit")[:50] }}
+        </h3>
+        <p class="text-xs text-gray-400 mb-3">{{ (s.brands or "")[:30] }}</p>
+
+        <!-- Mini stats -->
+        <div class="flex gap-2 mt-auto flex-wrap">
+          {% if s.nova_group %}
+          <span class="text-xs bg-gray-100 text-gray-600 rounded-full px-2.5 py-1 font-medium">NOVA {{ s.nova_group|int }}</span>
+          {% endif %}
+          {% if s.get("energy-kcal_100g") %}
+          <span class="text-xs bg-gray-100 text-gray-600 rounded-full px-2.5 py-1 font-medium">{{ s["energy-kcal_100g"]|int }} kcal</span>
+          {% endif %}
+          {% if s.additives_n is not none %}
+          <span class="text-xs {% if s.additives_n|int == 0 %}bg-green-50 text-green-700{% else %}bg-gray-100 text-gray-600{% endif %} rounded-full px-2.5 py-1 font-medium">
+            {{ s.additives_n|int }} additif{{ 's' if s.additives_n|int > 1 else '' }}
+          </span>
+          {% endif %}
+        </div>
+
+        <div class="mt-4 flex items-center justify-between">
+          <span class="text-xs text-gray-300">Voir le produit</span>
+          <svg class="w-4 h-4 text-gray-300 group-hover:text-navy group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+          </svg>
+        </div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+
+  <!-- Comparison table -->
+  {% if substituts|length >= 1 %}
+  <div class="mt-12 card" data-aos="fade-up">
+    <h2 class="font-display font-bold text-xl text-navy mb-6">Comparaison détaillée</h2>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-gray-100">
+            <th class="text-left py-3 pr-4 font-semibold text-gray-400 text-xs uppercase tracking-wider w-40">Produit</th>
+            <th class="text-center py-3 px-3 font-semibold text-gray-400 text-xs uppercase tracking-wider">Score</th>
+            <th class="text-center py-3 px-3 font-semibold text-gray-400 text-xs uppercase tracking-wider">NOVA</th>
+            <th class="text-center py-3 px-3 font-semibold text-gray-400 text-xs uppercase tracking-wider">Additifs</th>
+            <th class="text-center py-3 px-3 font-semibold text-gray-400 text-xs uppercase tracking-wider">Kcal/100g</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Original -->
+          <tr class="border-b border-gray-50 bg-gray-50/50">
+            <td class="py-3 pr-4">
+              <div class="font-semibold text-navy text-xs leading-snug">
+                {{ (original.product_name or "Actuel")[:30] }}
+              </div>
+              <div class="text-gray-400 text-xs">Produit actuel</div>
+            </td>
+            {% set og = (original.nutriscore_grade or "?")|lower %}
+            {% set ogc = {"a":{"bg":"#1a9641","text":"#fff"},"b":{"bg":"#a6d96a","text":"#1A1F36"},"c":{"bg":"#ffffbf","text":"#1A1F36"},"d":{"bg":"#fdae61","text":"#1A1F36"},"e":{"bg":"#d7191c","text":"#fff"}}.get(og, {"bg":"#E5E7EB","text":"#6B7280"}) %}
+            <td class="py-3 px-3 text-center">
+              <span class="inline-flex items-center justify-center w-7 h-7 rounded-md font-black text-xs" style="background:{{ ogc.bg }};color:{{ ogc.text }}">{{ og|upper }}</span>
+            </td>
+            <td class="py-3 px-3 text-center text-gray-600">{{ original.nova_group|int if original.nova_group else "—" }}</td>
+            <td class="py-3 px-3 text-center text-gray-600">{{ original.additives_n|int if original.additives_n is not none else "—" }}</td>
+            <td class="py-3 px-3 text-center text-gray-600">{{ original["energy-kcal_100g"]|int if original.get("energy-kcal_100g") else "—" }}</td>
+          </tr>
+          <!-- Substitutes -->
+          {% for s in substituts %}
+          {% set sg = (s.nutriscore_grade or "?")|lower %}
+          {% set sgc = {"a":{"bg":"#1a9641","text":"#fff"},"b":{"bg":"#a6d96a","text":"#1A1F36"},"c":{"bg":"#ffffbf","text":"#1A1F36"},"d":{"bg":"#fdae61","text":"#1A1F36"},"e":{"bg":"#d7191c","text":"#fff"}}.get(sg, {"bg":"#E5E7EB","text":"#6B7280"}) %}
+          <tr class="border-b border-gray-50 hover:bg-blue-50/30 transition-colors">
+            <td class="py-3 pr-4">
+              <a href="/produit/{{ s.code }}" class="font-semibold text-navy text-xs hover:underline leading-snug block">
+                {{ (s.product_name or "Produit")[:30] }}
+              </a>
+              <div class="text-gray-400 text-xs">{{ (s.brands or "")[:20] }}</div>
+            </td>
+            <td class="py-3 px-3 text-center">
+              <span class="inline-flex items-center justify-center w-7 h-7 rounded-md font-black text-xs" style="background:{{ sgc.bg }};color:{{ sgc.text }}">{{ sg|upper }}</span>
+            </td>
+            <td class="py-3 px-3 text-center text-gray-600">{{ s.nova_group|int if s.nova_group else "—" }}</td>
+            <td class="py-3 px-3 text-center {% if s.additives_n is not none and s.additives_n|int == 0 %}text-green-600 font-semibold{% else %}text-gray-600{% endif %}">
+              {{ s.additives_n|int if s.additives_n is not none else "—" }}
+            </td>
+            <td class="py-3 px-3 text-center text-gray-600">{{ s["energy-kcal_100g"]|int if s.get("energy-kcal_100g") else "—" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  {% else %}
+  <!-- No substitutes -->
+  <div class="empty-state" data-aos="fade-up">
+    <div class="text-5xl mb-4">🔍</div>
+    <h3 class="font-display font-bold text-navy text-xl mb-2">Aucun substitut trouvé</h3>
+    <p class="text-gray-400 text-sm mb-6">
+      Nous n'avons pas trouvé de meilleure alternative dans la même catégorie.
+    </p>
+    <a href="/recherche" class="btn-primary">Rechercher un produit</a>
+  </div>
+  {% endif %}
+
+  <!-- Back -->
+  <div class="mt-10 flex gap-3" data-aos="fade-up">
+    <a href="/produit/{{ original.code }}" class="btn-secondary">← Retour au produit</a>
+    <a href="/recherche" class="btn-ghost">Nouvelle recherche</a>
+  </div>
+
+</div>
+{% endblock %}

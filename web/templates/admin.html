@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+{% block title %}Administration — FoodLens{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-10">
+
+  <!-- En-tête admin -->
+  <div class="flex items-center justify-between mb-8" data-aos="fade-up">
+    <div class="flex items-center gap-3">
+      <div class="w-11 h-11 rounded-xl bg-amber-400 flex items-center justify-center text-2xl shadow-sm">⚙️</div>
+      <div>
+        <h1 class="text-2xl font-black text-navy">Administration</h1>
+        <p class="text-xs text-gray-400">Connecté en tant que <strong>{{ user.username }}</strong></p>
+      </div>
+    </div>
+    <a href="/dashboard" class="btn-ghost text-sm">← Dashboard</a>
+  </div>
+
+  <!-- Compteurs globaux -->
+  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-8" data-aos="fade-up">
+    {% for val, label, color in [
+      (db_stats.get('total_products','—'), 'Produits', '#1A1F36'),
+      (db_stats.get('total_users','—'),    'Utilisateurs', '#4361EE'),
+      (db_stats.get('nb_admins','—'),      'Admins', '#F59E0B'),
+      (db_stats.get('total_favorites','—'),'Favoris', '#EC4899'),
+      (db_stats.get('grade_a','—'),        'Grade A', '#1a9641'),
+      (db_stats.get('grade_e','—'),        'Grade E', '#d7191c'),
+    ] %}
+    <div class="kpi-card">
+      <div class="kpi-val" style="color:{{ color }}">
+        {% if val is number %}{{ "{:,}".format(val).replace(",", " ") }}{% else %}{{ val }}{% endif %}
+      </div>
+      <div class="kpi-label">{{ label }}</div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <!-- Tableau des utilisateurs (2/3) -->
+    <div class="lg:col-span-2" data-aos="fade-up">
+      <div class="card p-0 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+          <h2 class="font-display font-bold text-navy">Utilisateurs</h2>
+          <span class="text-xs text-gray-400">{{ users_list|length }} compte(s)</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-gray-100 bg-gray-50/60">
+                <th class="text-left py-3 px-5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Compte</th>
+                <th class="text-left py-3 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider hidden sm:table-cell">Email</th>
+                <th class="text-left py-3 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider hidden md:table-cell">Allergènes</th>
+                <th class="text-center py-3 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Rôle</th>
+                <th class="text-center py-3 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for u in users_list %}
+              <tr class="border-b border-gray-50 hover:bg-blue-50/20 transition-colors">
+                <td class="py-3 px-5">
+                  <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-navy text-white flex items-center justify-center text-xs font-black shrink-0 relative">
+                      {{ u.username[0]|upper if u.username else '?' }}
+                      {% if u.role == 'admin' %}
+                      <span class="absolute -top-0.5 -right-0.5 w-3 h-3 bg-amber-400 rounded-full border-2 border-white"></span>
+                      {% endif %}
+                    </div>
+                    <div class="min-w-0">
+                      <p class="font-semibold text-navy text-sm truncate">{{ u.username or '—' }}</p>
+                      {% if u.created %}
+                      <p class="text-xs text-gray-400">{{ u.created.strftime('%d/%m/%Y') if u.created else '' }}</p>
+                      {% endif %}
+                    </div>
+                  </div>
+                </td>
+                <td class="py-3 px-3 text-gray-500 text-xs hidden sm:table-cell truncate max-w-[160px]">{{ u.email or '—' }}</td>
+                <td class="py-3 px-3 hidden md:table-cell">
+                  {% if u.allergenes %}
+                  <div class="flex flex-wrap gap-1">
+                    {% for a in u.allergenes[:3] %}
+                    <span class="text-xs bg-red-50 text-red-600 px-1.5 py-0.5 rounded-md">{{ a }}</span>
+                    {% endfor %}
+                    {% if u.allergenes|length > 3 %}
+                    <span class="text-xs text-gray-400">+{{ u.allergenes|length - 3 }}</span>
+                    {% endif %}
+                  </div>
+                  {% else %}
+                  <span class="text-xs text-gray-300">—</span>
+                  {% endif %}
+                </td>
+                <td class="py-3 px-3 text-center">
+                  {% if u.role == 'admin' %}
+                  <span class="inline-flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-200 text-xs font-bold px-2 py-0.5 rounded-full">⚙️ Admin</span>
+                  {% else %}
+                  <span class="inline-flex items-center bg-gray-100 text-gray-500 text-xs font-medium px-2 py-0.5 rounded-full">👤 User</span>
+                  {% endif %}
+                </td>
+                <td class="py-3 px-3 text-center">
+                  {% if u.id != user.id %}
+                  <form action="/admin/role" method="POST" class="inline">
+                    <input type="hidden" name="user_id" value="{{ u.id }}">
+                    <input type="hidden" name="new_role" value="{{ 'user' if u.role == 'admin' else 'admin' }}">
+                    <button type="submit"
+                            class="text-xs font-semibold px-2.5 py-1 rounded-lg transition-colors
+                            {% if u.role == 'admin' %}bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-600
+                            {% else %}bg-navy/5 text-navy hover:bg-navy hover:text-white{% endif %}">
+                      {{ '↓ User' if u.role == 'admin' else '↑ Admin' }}
+                    </button>
+                  </form>
+                  {% else %}
+                  <span class="text-xs text-gray-300">(vous)</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% else %}
+              <tr>
+                <td colspan="5" class="py-12 text-center text-gray-400 text-sm">Aucun utilisateur</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar droite (1/3) -->
+    <div class="space-y-5" data-aos="fade-up" data-aos-delay="60">
+
+      <!-- Top produits favoris -->
+      <div class="card">
+        <h3 class="font-display font-semibold text-navy mb-4">❤️ Top favoris</h3>
+        {% if top_favs %}
+        <div class="space-y-3">
+          {% for f in top_favs %}
+          <div class="flex items-center justify-between gap-2">
+            <a href="/produit/{{ f._id }}" class="text-sm text-navy hover:underline truncate flex-1">
+              {{ (f.get('name') or f._id or '—')[:30] }}
+            </a>
+            <span class="text-xs font-bold bg-navy/5 text-navy px-2 py-0.5 rounded-full shrink-0">
+              {{ f.count }}×
+            </span>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-sm text-gray-300">Aucun favori enregistré.</p>
+        {% endif %}
+      </div>
+
+      <!-- Répartition grades (mini) -->
+      <div class="card">
+        <h3 class="font-display font-semibold text-navy mb-4">📊 Nutri-Score</h3>
+        {% set total_g = db_stats.get('total_products', 1) or 1 %}
+        {% for letter, bg, val_key in [
+          ('A','#1a9641','grade_a'),
+          ('B','#a6d96a',None),
+          ('C','#ffffbf',None),
+          ('D','#fdae61',None),
+          ('E','#d7191c','grade_e'),
+        ] %}
+        {% if val_key %}
+        {% set cnt = db_stats.get(val_key, 0) %}
+        <div class="flex items-center gap-2 mb-2">
+          <div class="w-6 h-6 rounded-md flex items-center justify-center text-xs font-black shrink-0"
+               style="background:{{ bg }};color:{{ '#fff' if letter in ['A','E'] else '#1A1F36' }}">{{ letter }}</div>
+          <div class="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+            <div class="h-full rounded-full" style="width:{{ [(cnt / total_g * 100)|round|int, 100]|min }}%;background:{{ bg }}"></div>
+          </div>
+          <span class="text-xs text-gray-500 w-10 text-right">{{ "{:,}".format(cnt).replace(",", " ") }}</span>
+        </div>
+        {% endif %}
+        {% endfor %}
+        <p class="text-xs text-gray-400 mt-3">Grades B, C, D : voir <a href="/dashboard" class="underline">Dashboard</a></p>
+      </div>
+
+      <!-- Accès rapides admin -->
+      <div class="card">
+        <h3 class="font-display font-semibold text-navy mb-3">🔗 Accès rapides</h3>
+        <div class="space-y-2">
+          <a href="/recherche" class="flex items-center gap-2 text-sm text-gray-600 hover:text-navy hover:bg-gray-50 rounded-lg px-3 py-2 transition-colors">
+            🔍 Recherche produits
+          </a>
+          <a href="/dashboard" class="flex items-center gap-2 text-sm text-gray-600 hover:text-navy hover:bg-gray-50 rounded-lg px-3 py-2 transition-colors">
+            📊 Dashboard analytics
+          </a>
+          <a href="/profil" class="flex items-center gap-2 text-sm text-gray-600 hover:text-navy hover:bg-gray-50 rounded-lg px-3 py-2 transition-colors">
+            👤 Mon profil
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,31 @@
+# Variables d'environnement — ne jamais committer
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+*.egg-info/
+dist/
+build/
+
+# Données brutes (trop lourdes pour git)
+data/raw/
+*.csv
+fr.openfoodfacts.org.products.csv
+
+# Modèle entraîné — inclus dans le repo pour le déploiement Render
+# models/*.pkl
+
+# IDE
+.vscode/
+.idea/
+*.code-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Notebooks
+.ipynb_checkpoints/

@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}Mon profil — FoodLens{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-10">
+
+  <!-- Profile header -->
+  <div class="card mb-6" data-aos="fade-up">
+    <div class="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+      <div class="avatar-ring shrink-0">{{ user.username[0]|upper }}</div>
+      <div class="flex-1 text-center sm:text-left">
+        <h1 class="text-2xl font-black text-navy mb-1">{{ user.username }}</h1>
+        <p class="text-gray-400 text-sm mb-4">{{ user.email }}</p>
+        <div class="flex flex-wrap gap-2 justify-center sm:justify-start">
+          <span class="tag">{{ favoris|length }} favori{{ 's' if favoris|length != 1 else '' }}</span>
+          {% if user.allergenes %}
+          {% for a in user.allergenes %}
+          <span class="tag tag-blue">⚠️ {{ a }}</span>
+          {% endfor %}
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <!-- Favorites -->
+    <div class="lg:col-span-2" data-aos="fade-up" data-aos-delay="60">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="font-display font-bold text-xl text-navy">❤️ Mes favoris</h2>
+        {% if favoris %}
+        <span class="text-xs text-gray-400">{{ favoris|length }} produit{{ 's' if favoris|length != 1 else '' }}</span>
+        {% endif %}
+      </div>
+
+      {% if favoris %}
+      <div class="space-y-2">
+        {% for p in favoris %}
+        {% set grade = (p.nutriscore_grade or "?")|lower %}
+        {% set gc = {"a":{"bg":"#1a9641","text":"#fff"},"b":{"bg":"#a6d96a","text":"#1A1F36"},"c":{"bg":"#ffffbf","text":"#1A1F36"},"d":{"bg":"#fdae61","text":"#1A1F36"},"e":{"bg":"#d7191c","text":"#fff"}}.get(grade, {"bg":"#E5E7EB","text":"#6B7280"}) %}
+        <a href="/produit/{{ p.code }}" class="fav-card group">
+          {% if p.get("image_url") %}
+          <img src="{{ p.image_url }}" alt="{{ p.product_name }}"
+               class="w-12 h-12 rounded-xl object-contain bg-gray-50 border border-gray-100 p-1 shrink-0"
+               onerror="this.outerHTML='<div class=\'w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center text-xl shrink-0\'>🥫</div>'">
+          {% else %}
+          <div class="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center text-xl shrink-0">🥫</div>
+          {% endif %}
+          <div class="flex-1 min-w-0">
+            <p class="font-semibold text-navy text-sm leading-snug truncate group-hover:underline">
+              {{ p.product_name or "Produit" }}
+            </p>
+            <p class="text-xs text-gray-400 truncate">{{ p.brands or "" }}</p>
+          </div>
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs shrink-0"
+               style="background:{{ gc.bg }};color:{{ gc.text }}">
+            {{ grade|upper }}
+          </div>
+          <svg class="w-4 h-4 text-gray-300 group-hover:text-navy group-hover:translate-x-1 transition-all shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+          </svg>
+        </a>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-state">
+        <div class="text-4xl mb-3">❤️</div>
+        <h3 class="font-display font-bold text-navy text-lg mb-2">Aucun favori</h3>
+        <p class="text-gray-400 text-sm mb-5">Ajoutez des produits à vos favoris depuis leur fiche.</p>
+        <a href="/recherche" class="btn-primary">Rechercher des produits</a>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Settings sidebar -->
+    <div class="space-y-4" data-aos="fade-up" data-aos-delay="120">
+
+      <!-- Allergenes -->
+      <div class="card">
+        <h3 class="font-display font-semibold text-navy mb-4">⚠️ Allergènes</h3>
+        <form action="/profil/allergenes" method="POST" class="space-y-3">
+          {% set all_allergens = [
+            ("gluten","Gluten"),("lactose","Lactose"),("arachides","Arachides"),
+            ("fruits_coques","Fruits à coque"),("oeufs","Œufs"),("poisson","Poisson"),
+            ("mollusques","Mollusques"),("soja","Soja"),("celeri","Céleri"),
+            ("moutarde","Moutarde"),("sesame","Sésame"),("sulfites","Sulfites"),
+          ] %}
+          {% for key, label in all_allergens %}
+          <label class="flex items-center gap-3 cursor-pointer group">
+            <input type="checkbox" name="allergenes" value="{{ key }}"
+                   {% if key in (user.allergenes or []) %}checked{% endif %}
+                   class="w-4 h-4 rounded border-gray-300 text-navy focus:ring-navy/30 cursor-pointer">
+            <span class="text-sm text-gray-600 group-hover:text-navy transition-colors">{{ label }}</span>
+          </label>
+          {% endfor %}
+          <button type="submit" class="btn-primary w-full justify-center mt-2">Sauvegarder</button>
+        </form>
+      </div>
+
+      <!-- Danger zone -->
+      <div class="card border-red-100">
+        <h3 class="font-display font-semibold text-red-600 mb-3">Compte</h3>
+        <form action="/deconnexion" method="POST">
+          <button type="submit" class="w-full text-sm font-medium text-red-500 hover:text-red-700 hover:bg-red-50 rounded-xl px-4 py-2.5 transition-colors text-left border border-red-100">
+            🚪 Se déconnecter
+          </button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

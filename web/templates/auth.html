@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% block title %}Connexion — FoodLens{% endblock %}
+
+{% block content %}
+<div class="min-h-[calc(100vh-8rem)] flex items-center justify-center px-4 py-12">
+  <div class="w-full max-w-md" data-aos="fade-up">
+
+    <!-- Logo -->
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center gap-3 mb-4">
+        <div class="w-12 h-12 rounded-2xl bg-navy flex items-center justify-center text-white font-black text-xl shadow-lg">F</div>
+        <span class="font-display font-bold text-navy text-2xl">FoodLens</span>
+      </div>
+      <p class="text-gray-400 text-sm">Analysez vos aliments, mangez mieux.</p>
+    </div>
+
+    <!-- Card -->
+    <div class="card p-0 overflow-hidden">
+
+      <!-- Tabs -->
+      <div id="auth-tabs" class="flex border-b border-gray-100">
+        <button id="tab-login" class="auth-tab active" onclick="switchTab('login')">Connexion</button>
+        <button id="tab-register" class="auth-tab" onclick="switchTab('register')">Inscription</button>
+      </div>
+
+      <!-- Flash messages -->
+      {% if error %}
+      <div class="mx-6 mt-5 flash-error">⚠️ {{ error }}</div>
+      {% endif %}
+      {% if success %}
+      <div class="mx-6 mt-5 flash-success">✅ {{ success }}</div>
+      {% endif %}
+
+      <!-- LOGIN FORM -->
+      <div id="form-login" class="p-6">
+        <form action="/connexion" method="POST" class="space-y-4">
+          <input type="hidden" name="action" value="login">
+          <div>
+            <label class="auth-label">Email</label>
+            <input type="email" name="email" required autocomplete="email"
+                   class="auth-input" placeholder="vous@email.com">
+          </div>
+          <div>
+            <label class="auth-label">Mot de passe</label>
+            <div class="relative">
+              <input type="password" name="password" required autocomplete="current-password"
+                     id="login-pwd" class="auth-input pr-11" placeholder="••••••••">
+              <button type="button" onclick="togglePwd('login-pwd','eye-login')"
+                      class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-navy transition-colors">
+                <svg id="eye-login" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <button type="submit" class="btn-primary w-full justify-center py-3 text-base">
+            Se connecter →
+          </button>
+        </form>
+
+        <!-- Divider -->
+        <div class="flex items-center gap-3 my-5">
+          <hr class="flex-1 border-gray-100">
+          <span class="text-xs text-gray-300 font-medium">ou</span>
+          <hr class="flex-1 border-gray-100">
+        </div>
+
+        <!-- Google button (visual only) -->
+        <button type="button"
+                class="w-full flex items-center justify-center gap-3 border border-gray-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-600 hover:border-gray-300 hover:bg-gray-50 transition-all">
+          <svg class="w-5 h-5" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+          </svg>
+          Continuer avec Google (bientôt disponible)
+        </button>
+
+        <p class="text-center text-xs text-gray-400 mt-5">
+          Pas encore de compte ?
+          <button onclick="switchTab('register')" class="text-navy font-semibold hover:underline">S'inscrire</button>
+        </p>
+      </div>
+
+      <!-- REGISTER FORM -->
+      <div id="form-register" class="p-6 hidden">
+        <form action="/inscription" method="POST" class="space-y-4">
+          <div>
+            <label class="auth-label">Nom d'utilisateur</label>
+            <input type="text" name="username" required autocomplete="username"
+                   class="auth-input" placeholder="jean_dupont">
+          </div>
+          <div>
+            <label class="auth-label">Email</label>
+            <input type="email" name="email" required autocomplete="email"
+                   class="auth-input" placeholder="vous@email.com">
+          </div>
+          <div>
+            <label class="auth-label">Mot de passe</label>
+            <div class="relative">
+              <input type="password" name="password" required autocomplete="new-password"
+                     id="reg-pwd" class="auth-input pr-11" placeholder="Minimum 6 caractères">
+              <button type="button" onclick="togglePwd('reg-pwd','eye-reg')"
+                      class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-navy transition-colors">
+                <svg id="eye-reg" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <button type="submit" class="btn-primary w-full justify-center py-3 text-base">
+            Créer mon compte →
+          </button>
+        </form>
+
+        <p class="text-center text-xs text-gray-400 mt-5">
+          Déjà un compte ?
+          <button onclick="switchTab('login')" class="text-navy font-semibold hover:underline">Se connecter</button>
+        </p>
+      </div>
+
+    </div>
+
+    <p class="text-center text-xs text-gray-300 mt-6">
+      En continuant, vous acceptez nos conditions d'utilisation.
+    </p>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function switchTab(tab) {
+  const isLogin = tab === 'login';
+  document.getElementById('form-login').classList.toggle('hidden', !isLogin);
+  document.getElementById('form-register').classList.toggle('hidden', isLogin);
+  document.getElementById('tab-login').classList.toggle('active', isLogin);
+  document.getElementById('tab-register').classList.toggle('active', !isLogin);
+}
+
+function togglePwd(inputId, iconId) {
+  const input = document.getElementById(inputId);
+  input.type = input.type === 'password' ? 'text' : 'password';
+}
+
+// Auto-switch to register tab if URL has #register
+if (window.location.hash === '#register') switchTab('register');
+</script>
+{% endblock %}
